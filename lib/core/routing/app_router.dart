@@ -1,66 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:gym_management_app/features/auth/views/login_screen.dart';
+import 'package:gym_management_app/features/members/views/add_member_screen.dart';
+import 'package:gym_management_app/features/members/views/members_screen.dart';
+
+import 'package:gym_management_app/core/layout/main_layout.dart';
+
 class AppRouter {
-  // Define route paths as constants to avoid typos
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String members = '/members';
+  static const String addMember = '/add-member';
+  static const String trainers = '/trainers';
+  static const String attendance = '/attendance';
 
-  // Singleton instance of GoRouter
   static final GoRouter router = GoRouter(
     initialLocation: login,
     debugLogDiagnostics: true,
-    
-    // Global Redirect (Middleware / Guard)
-    redirect: (BuildContext context, GoRouterState state) {
-      // TODO: Implement actual authentication check here using Provider/SecureStorage
-      const bool isAuthenticated = false; 
-      
-      final bool isGoingToLogin = state.matchedLocation == login;
-
-      // If the user is not authenticated and trying to access a secure page, redirect to login
-      if (!isAuthenticated && !isGoingToLogin) {
-        return login;
-      }
-
-      // If the user is authenticated and trying to access the login page, redirect to dashboard
-      if (isAuthenticated && isGoingToLogin) {
-        return dashboard;
-      }
-
-      // No redirect needed
-      return null;
-    },
 
     routes: <RouteBase>[
+      // 🔓 LOGIN
       GoRoute(
         path: login,
         name: 'login',
-        builder: (BuildContext context, GoRouterState state) {
-          // TODO: Replace with actual LoginScreen when features are refactored
-          return const Scaffold(
-            body: Center(child: Text('Login Screen (Under Construction)')),
-          );
-        },
+        builder: (context, state) => const LoginScreen(),
       ),
-      GoRoute(
-        path: dashboard,
-        name: 'dashboard',
-        builder: (BuildContext context, GoRouterState state) {
-           // TODO: Replace with actual DashboardScreen
-          return const Scaffold(
-            body: Center(child: Text('Dashboard Screen (Secure)')),
-          );
+
+      // 🔐 MAIN APP (WITH BOTTOM NAV)
+      ShellRoute(
+        builder: (context, state, child) {
+          return MainLayout(child: child);
         },
+        routes: [
+          GoRoute(
+            path: dashboard,
+            name: 'dashboard',
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Dashboard Screen'))),
+          ),
+
+          GoRoute(
+            path: members,
+            name: 'members',
+            builder: (context, state) => const MembersScreen(),
+          ),
+
+          GoRoute(
+            path: trainers,
+            name: 'trainers',
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Trainers Screen'))),
+          ),
+
+          GoRoute(
+            path: attendance,
+            name: 'attendance',
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Attendance Screen'))),
+          ),
+        ],
+      ),
+
+      // ➕ خارج الـ BottomNav
+      GoRoute(
+        path: addMember,
+        name: 'addMember',
+        builder: (context, state) => const AddMemberScreen(),
       ),
     ],
-    
-    // Error Page Builder
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Route not found: ${state.error}'),
-      ),
-    ),
+
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text('Route not found'))),
   );
 }
