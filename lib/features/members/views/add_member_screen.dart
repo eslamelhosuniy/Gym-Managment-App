@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gym_management_app/core/theme/theme.dart';
 
 class AddMemberScreen extends StatefulWidget {
   const AddMemberScreen({super.key});
@@ -8,6 +9,7 @@ class AddMemberScreen extends StatefulWidget {
 }
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
+  final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final ageController = TextEditingController();
@@ -15,80 +17,188 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   final startDateController = TextEditingController();
   final expiryDateController = TextEditingController();
 
-  void saveMember() {
-    final name = nameController.text;
-    final phone = phoneController.text;
-
-    if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill required fields")),
-      );
-      return;
+  Future<void> _pickDate(TextEditingController controller) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppTheme.primaryColor),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      controller.text =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
     }
+  }
 
-    // 🔥 هنا لاحقًا هتربطه ب API أو State Management
-    // print("Member Saved: $name - $phone");
+  void saveMember() {
+    if (!_formKey.currentState!.validate()) return;
+
+    // 🔥 Connect to API or State Management here
 
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Add Member")),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: "Name"),
-            ),
-            const SizedBox(height: 10),
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Section: Personal Info ──
+              _SectionHeader(title: "Personal Information"),
+              const SizedBox(height: 12),
 
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: "Phone"),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: ageController,
-              decoration: const InputDecoration(labelText: "Age"),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: planController,
-              decoration: const InputDecoration(labelText: "Plan Type"),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: startDateController,
-              decoration: const InputDecoration(labelText: "Start Date"),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: expiryDateController,
-              decoration: const InputDecoration(labelText: "Expiry Date"),
-            ),
-
-            const SizedBox(height: 25),
-
-            // 🔥 زرار الإضافة هنا
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: saveMember,
-                child: const Text("Add Member"),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: "Full Name *",
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? "Name is required" : null,
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: "Phone Number *",
+                  prefixIcon: Icon(Icons.phone_outlined),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? "Phone is required" : null,
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: ageController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Age",
+                  prefixIcon: Icon(Icons.cake_outlined),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Section: Membership ──
+              _SectionHeader(title: "Membership Details"),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: planController,
+                decoration: const InputDecoration(
+                  labelText: "Plan Type",
+                  prefixIcon: Icon(Icons.card_membership_outlined),
+                  hintText: "e.g. Monthly, Quarterly, Annual",
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: startDateController,
+                readOnly: true,
+                onTap: () => _pickDate(startDateController),
+                decoration: const InputDecoration(
+                  labelText: "Start Date",
+                  prefixIcon: Icon(Icons.calendar_today_outlined),
+                  hintText: "Select date",
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: expiryDateController,
+                readOnly: true,
+                onTap: () => _pickDate(expiryDateController),
+                decoration: const InputDecoration(
+                  labelText: "Expiry Date",
+                  prefixIcon: Icon(Icons.event_outlined),
+                  hintText: "Select date",
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ── Save Button ──
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: saveMember,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text("Add Member"),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondaryColor,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    "Cancel",
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 16,
+            color: AppTheme.textPrimaryColor,
+          ),
+        ),
+      ],
     );
   }
 }
