@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:gym_management_app/features/auth/views/login_screen.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
 import 'package:gym_management_app/features/members/views/members_screen.dart';
+import 'package:gym_management_app/features/dashboard/views/admin_dashboard_screen.dart';
+import 'package:gym_management_app/features/trainers/views/trainers_list_screen.dart';
+import 'package:gym_management_app/features/attendance/views/attendance_screen.dart';
 
 import 'package:gym_management_app/core/layout/main_layout.dart';
 
@@ -18,16 +21,13 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: login,
     debugLogDiagnostics: true,
-
     routes: <RouteBase>[
-      // 🔓 LOGIN
       GoRoute(
         path: login,
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
 
-      // 🔐 MAIN APP (WITH BOTTOM NAV)
       ShellRoute(
         builder: (context, state, child) {
           return MainLayout(child: child);
@@ -36,8 +36,7 @@ class AppRouter {
           GoRoute(
             path: dashboard,
             name: 'dashboard',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Dashboard Screen'))),
+            builder: (context, state) => const AdminDashboardScreen(),
           ),
 
           GoRoute(
@@ -49,28 +48,24 @@ class AppRouter {
           GoRoute(
             path: trainers,
             name: 'trainers',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Trainers Screen'))),
+            builder: (context, state) => const TrainersListScreen(),
           ),
 
           GoRoute(
             path: attendance,
             name: 'attendance',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Attendance Screen'))),
+            builder: (context, state) => const AttendanceScreen(),
           ),
         ],
       ),
 
-      // ➕ خارج الـ BottomNav
       GoRoute(
         path: addMember,
         name: 'addMember',
         builder: (context, state) => const AddMemberScreen(),
       ),
     ],
-
     errorBuilder: (context, state) =>
-        Scaffold(body: Center(child: Text('Route not found'))),
+        const Scaffold(body: Center(child: Text('Route not found'))),
   );
 }
