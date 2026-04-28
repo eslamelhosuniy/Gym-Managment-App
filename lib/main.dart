@@ -1,18 +1,28 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+
+import 'core/network/db_connection.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/theme.dart';
+import 'features/auth/controllers/auth_controller.dart';
+import 'features/auth/data/auth_local_service.dart';
 
-void main() async {
-  // Ensures that Flutter engine is fully initialized before async tasks
+Future<void> main() async {
+  // Ensures that the Flutter engine is fully initialized before any
+  // async work or plugin access happens.
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables from .env file
   await dotenv.load(fileName: ".env");
 
-  // TODO: Initialize database connection here later
-  // await DbConnection.connect();
-
+  try {
+    await DbConnection.instance.connect();
+  } on DbConnectionException catch (e) {
+    dev.log('Startup: DB connection failed — $e', name: 'main', error: e);
+  }
   runApp(const O2GymApp());
 }
 
@@ -21,16 +31,27 @@ class O2GymApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We use MaterialApp.router to integrate with go_router
-    return MaterialApp.router(
-      title: 'O2 Gym Management',
-      debugShowCheckedModeBanner: false,
-      
+    return MultiProvider(
+      providers: [
+        // AuthController depends on AuthLocalService.
+        ChangeNotifierProvider<AuthController>(
+          create: (_) {
+            final controller = AuthController(AuthLocalService());
+            // Restore any existing session from local storage on boot.
+            controller.tryRestoreSession();
+            return controller;
+          },
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'O2 Gym Management',
+        debugShowCheckedModeBanner: false,
+
       // Applying the central theme we created earlier
-      theme: AppTheme.lightTheme,
-      
+        theme: AppTheme.lightTheme,
+
       // Hooking up our customized Router
-      routerConfig: AppRouter.router,
-    );
+        routerConfig: AppRouter.router,
+    ));
   }
 }
