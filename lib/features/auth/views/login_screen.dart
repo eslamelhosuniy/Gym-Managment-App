@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:gym_management_app/core/routing/app_router.dart';
 import 'package:gym_management_app/core/theme/theme.dart';
+import '../controllers/auth_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,22 +17,29 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
 
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
 
-    // 🔥 Connect to auth logic here
-    await Future.delayed(const Duration(milliseconds: 800));
+    final controller = context.read<AuthController>();
+    final success = await controller.login(
+      email: emailController.text,
+      password: passwordController.text,
+    );
 
-    setState(() => _isLoading = false);
-    // context.go(AppRouter.dashboard);
+    if (success && mounted) {
+      context.go(AppRouter.dashboard);
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(controller.errorMessage ?? '')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool _isLoading = context.select<AuthController, bool>((c) => c.isLoading);
 
     return Scaffold(
       body: SafeArea(
