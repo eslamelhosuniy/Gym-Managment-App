@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/dashboard_controller.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() =>
+        context.read<DashboardController>().loadDashboardData());
+  }
 
   Widget buildCard({
     required IconData icon,
@@ -45,51 +59,51 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = context.watch<DashboardController>();
+
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            "Admin Dashboard",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            "Overview of gym metrics",
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-          buildCard(
-            icon: Icons.people,
-            color: Colors.blue,
-            title: "Total Members",
-            value: "5",
-          ),
-          buildCard(
-            icon: Icons.person,
-            color: Colors.green,
-            title: "Active Members",
-            value: "2",
-          ),
-          buildCard(
-            icon: Icons.person_off,
-            color: Colors.red,
-            title: "Expired Members",
-            value: "2",
-          ),
-          buildCard(
-            icon: Icons.access_time,
-            color: Colors.orange,
-            title: "Expiring in 7 Days",
-            value: "1",
-          ),
-          buildCard(
-            icon: Icons.monitor_heart,
-            color: Colors.purple,
-            title: "Today's Attendance",
-            value: "4",
-          ),
-        ],
-      ),
+      child: ctrl.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ctrl.errorMessage != null
+              ? Center(child: Text(ctrl.errorMessage!))
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const Text(
+                      "Admin Dashboard",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const Text(
+                      "Overview of gym metrics",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    buildCard(
+                      icon: Icons.people,
+                      color: Colors.blue,
+                      title: "Total Members",
+                      value: ctrl.totalMembers.toString(),
+                    ),
+                    buildCard(
+                      icon: Icons.person,
+                      color: Colors.green,
+                      title: "Active Members",
+                      value: ctrl.activeMembers.toString(),
+                    ),
+                    buildCard(
+                      icon: Icons.person_off,
+                      color: Colors.red,
+                      title: "Expired Members",
+                      value: ctrl.expiredMembers.toString(),
+                    ),
+                    buildCard(
+                      icon: Icons.monitor_heart,
+                      color: Colors.purple,
+                      title: "Today's Attendance",
+                      value: ctrl.todayAttendance.toString(),
+                    ),
+                  ],
+                ),
     );
   }
 }

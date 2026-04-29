@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gym_management_app/core/theme/theme.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
+import 'package:gym_management_app/features/members/controllers/member_controller.dart';
 
 class MembersScreen extends StatefulWidget {
   const MembersScreen({super.key});
@@ -11,15 +13,15 @@ class MembersScreen extends StatefulWidget {
 
 class _MembersScreenState extends State<MembersScreen> {
   final TextEditingController searchController = TextEditingController();
-  String selectedFilter = "All";
 
-  final List<Map<String, String>> members = [
-    {"name": "Alice Brown", "phone": "+1 555-0001", "status": "Expiring Soon"},
-    {"name": "Bob Wilson", "phone": "+1 555-0002", "status": "Expired"},
-    {"name": "Carol Davis", "phone": "+1 555-0003", "status": "Active"},
-    {"name": "David Martinez", "phone": "+1 555-0004", "status": "Expired"},
-    {"name": "Emma Garcia", "phone": "+1 555-0005", "status": "Active"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Load members from DB on screen open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MemberController>().getMembers();
+    });
+  }
 
   Color getStatusColor(String status) {
     switch (status) {
@@ -32,26 +34,10 @@ class _MembersScreenState extends State<MembersScreen> {
     }
   }
 
-  List<Map<String, String>> get filteredMembers {
-    final query = searchController.text.toLowerCase();
-    List<Map<String, String>> list = selectedFilter == "All"
-        ? members
-        : members.where((m) => m["status"] == selectedFilter).toList();
-    if (query.isNotEmpty) {
-      list = list
-          .where(
-            (m) =>
-                m["name"]!.toLowerCase().contains(query) ||
-                m["phone"]!.toLowerCase().contains(query),
-          )
-          .toList();
-    }
-    return list;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final controller = context.watch<MemberController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -60,205 +46,206 @@ class _MembersScreenState extends State<MembersScreen> {
           IconButton(
             icon: const Icon(Icons.person_add_outlined),
             onPressed: () {
-              // Navigate to AddMemberScreen
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AddMemberScreen(),
                 ),
-              );
+              ).then((_) => controller.getMembers()); // refresh after add
             },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // ── Header Stats ──
-          Container(
-            color: AppTheme.primaryColor,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Row(
+      body: controller.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                _StatChip(
-                  label: "Total",
-                  count: members.length,
-                  color: Colors.white24,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: "Active",
-                  count: members.where((m) => m["status"] == "Active").length,
-                  color: Colors.green.withOpacity(0.25),
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: "Expired",
-                  count: members.where((m) => m["status"] == "Expired").length,
-                  color: Colors.red.withOpacity(0.25),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Search + Filters ──
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: searchController,
-                  decoration: const InputDecoration(
-                    hintText: "Search by name or phone",
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                // ── Header Stats ──
+                Container(
+                  color: AppTheme.primaryColor,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                   child: Row(
-                    children: ["All", "Active", "Expired", "Expiring Soon"].map(
-                      (filter) {
-                        final isSelected = selectedFilter == filter;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(
-                              filter,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppTheme.textSecondaryColor,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            selected: isSelected,
-                            selectedColor: AppTheme.primaryColor,
-                            backgroundColor: AppTheme.surfaceColor,
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppTheme.primaryColor
-                                  : Colors.grey.shade300,
-                            ),
-                            onSelected: (_) =>
-                                setState(() => selectedFilter = filter),
-                          ),
-                        );
-                      },
-                    ).toList(),
+                    children: [
+                      _StatChip(
+                        label: "Total",
+                        count: controller.total,
+                        color: Colors.white24,
+                      ),
+                      const SizedBox(width: 8),
+                      _StatChip(
+                        label: "Active",
+                        count: controller.active,
+                        color: Colors.green.withOpacity(0.25),
+                      ),
+                      const SizedBox(width: 8),
+                      _StatChip(
+                        label: "Expired",
+                        count: controller.expired,
+                        color: Colors.red.withOpacity(0.25),
+                      ),
+                    ],
                   ),
+                ),
+
+                // ── Search + Filters ──
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: searchController,
+                        decoration: const InputDecoration(
+                          hintText: "Search by name or phone",
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                        onChanged: (value) => controller.setSearch(value),
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children:
+                              ["All", "Active", "Expired", "Expiring Soon"].map(
+                            (filter) {
+                              final isSelected =
+                                  controller.selectedFilter == filter;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text(
+                                    filter,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppTheme.textSecondaryColor,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  selected: isSelected,
+                                  selectedColor: AppTheme.primaryColor,
+                                  backgroundColor: AppTheme.surfaceColor,
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? AppTheme.primaryColor
+                                        : Colors.grey.shade300,
+                                  ),
+                                  onSelected: (_) =>
+                                      controller.setFilter(filter),
+                                ),
+                              );
+                            },
+                          ).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Member Count Label ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        "${controller.filteredMembers.length} member${controller.filteredMembers.length != 1 ? 's' : ''}",
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // ── List ──
+                Expanded(
+                  child: controller.filteredMembers.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.person_search,
+                                size: 60,
+                                color: AppTheme.textSecondaryColor
+                                    .withOpacity(0.4),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                "No members found",
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: controller.filteredMembers.length,
+                          itemBuilder: (context, index) {
+                            final member = controller.filteredMembers[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      AppTheme.primaryColor.withOpacity(0.1),
+                                  child: Text(
+                                    member.fullName[0],
+                                    style: const TextStyle(
+                                      color: AppTheme.primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  member.fullName,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  member.phoneNumber,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: getStatusColor(member.status)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: getStatusColor(member.status)
+                                          .withOpacity(0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    member.status,
+                                    style: TextStyle(
+                                      color: getStatusColor(member.status),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
-          ),
-
-          // ── Member Count Label ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  "${filteredMembers.length} member${filteredMembers.length != 1 ? 's' : ''}",
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // ── List ──
-          Expanded(
-            child: filteredMembers.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.person_search,
-                          size: 60,
-                          color: AppTheme.textSecondaryColor.withOpacity(0.4),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "No members found",
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    itemCount: filteredMembers.length,
-                    itemBuilder: (context, index) {
-                      final member = filteredMembers[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryColor.withOpacity(
-                              0.1,
-                            ),
-                            child: Text(
-                              member["name"]![0],
-                              style: const TextStyle(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            member["name"]!,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(
-                            member["phone"]!,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: getStatusColor(
-                                member["status"]!,
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: getStatusColor(
-                                  member["status"]!,
-                                ).withOpacity(0.4),
-                              ),
-                            ),
-                            child: Text(
-                              member["status"]!,
-                              style: TextStyle(
-                                color: getStatusColor(member["status"]!),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gym_management_app/core/theme/theme.dart';
+import 'package:gym_management_app/features/members/controllers/member_controller.dart';
 
 class AddMemberScreen extends StatefulWidget {
   const AddMemberScreen({super.key});
@@ -16,6 +18,8 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   final planController = TextEditingController();
   final startDateController = TextEditingController();
   final expiryDateController = TextEditingController();
+
+  bool _isSaving = false; // 🔹 loading state
 
   Future<void> _pickDate(TextEditingController controller) async {
     final picked = await showDatePicker(
@@ -36,12 +40,28 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
     }
   }
 
-  void saveMember() {
+  Future<void> saveMember() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // 🔥 Connect to API or State Management here
+    setState(() => _isSaving = true);
 
-    Navigator.pop(context);
+    try {
+      await context.read<MemberController>().addMember(
+            name: nameController.text.trim(),
+            phone: phoneController.text.trim(),
+            age: int.tryParse(ageController.text.trim()) ?? 0,
+          );
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to add member: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -138,9 +158,18 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: saveMember,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("Add Member"),
+                  onPressed: _isSaving ? null : saveMember,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_outline),
+                  label: Text(_isSaving ? "Saving..." : "Add Member"),
                 ),
               ),
 
@@ -149,7 +178,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isSaving ? null : () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.textSecondaryColor,
                     side: BorderSide(color: Colors.grey.shade300),

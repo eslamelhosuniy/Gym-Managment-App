@@ -9,6 +9,8 @@ import 'core/routing/app_router.dart';
 import 'core/theme/theme.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/data/auth_local_service.dart';
+import 'features/members/controllers/member_controller.dart'; 
+import 'features/dashboard/controllers/dashboard_controller.dart'; 
 
 Future<void> main() async {
   // Ensures that the Flutter engine is fully initialized before any
@@ -42,16 +44,22 @@ class O2GymApp extends StatelessWidget {
             return controller;
           },
         ),
+        ChangeNotifierProvider<MemberController>(
+          create: (_) => MemberController(),
+        ),
+        ChangeNotifierProvider<DashboardController>(
+          create: (_) => DashboardController(),
+        ),
       ],
-      child: MaterialApp.router(
-        title: 'O2 Gym Management',
-        debugShowCheckedModeBanner: false,
-
-      // Applying the central theme we created earlier
-        theme: AppTheme.lightTheme,
-
-      // Hooking up our customized Router
-        routerConfig: AppRouter.router,
-    ));
+      child: Builder(                          
+        builder: (context) {
+          return MaterialApp.router(
+            title: 'O2 Gym Management',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            routerConfig: AppRouter.router,
+          );
+        },
+      ),);
   }
 }

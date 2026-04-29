@@ -56,13 +56,14 @@ class AppRouter {
             name: 'attendance',
             builder: (context, state) => const AttendanceScreen(),
           ),
-        ],
-      ),
+        
 
-      GoRoute(
-        path: addMember,
-        name: 'addMember',
-        builder: (context, state) => const AddMemberScreen(),
+          GoRoute(
+            path: addMember,
+            name: 'addMember',
+            builder: (context, state) => const AddMemberScreen(),
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) =>
