@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gym_management_app/features/auth/views/login_screen.dart';
+import 'package:gym_management_app/features/members/models/member_model.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
+import 'package:gym_management_app/features/members/views/member_details_screen.dart';
 import 'package:gym_management_app/features/members/views/members_screen.dart';
 import 'package:gym_management_app/features/dashboard/views/admin_dashboard_screen.dart';
 import 'package:gym_management_app/features/trainers/views/trainers_list_screen.dart';
@@ -44,6 +46,14 @@ class AppRouter {
             name: 'members',
             builder: (context, state) => const MembersScreen(),
           ),
+          GoRoute(
+            path: '/member-details',
+            name: 'memberDetails',
+            builder: (context, state) {
+              final member = state.extra as MemberModel;
+              return MemberDetailsScreen(member: member);
+            },
+          ),
 
           GoRoute(
             path: trainers,
@@ -56,7 +66,6 @@ class AppRouter {
             name: 'attendance',
             builder: (context, state) => const AttendanceScreen(),
           ),
-        
 
           GoRoute(
             path: addMember,

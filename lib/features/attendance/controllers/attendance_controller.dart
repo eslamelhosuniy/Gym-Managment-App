@@ -11,12 +11,13 @@ class AttendanceController extends ChangeNotifier {
 
   AttendanceController({required this.memberController});
 
-  DbCollection get _attendanceCollection => DbConnection.instance.db.collection('attendance');
+  DbCollection get _attendanceCollection =>
+      DbConnection.instance.db.collection('attendance');
 
   List<AttendanceModel> attendanceHistory = [];
   bool isInitialLoading = false; // Used only when fetching the first page
-  bool isPaginating = false;     // Used only when scrolling to fetch more pages
-  bool isProcessing = false;     // Used when marking attendance (QR or Manual)
+  bool isPaginating = false; // Used only when scrolling to fetch more pages
+  bool isProcessing = false; // Used when marking attendance (QR or Manual)
   bool hasMore = true;
   int currentPage = 0;
   final int limit = 20;
@@ -34,23 +35,26 @@ class AttendanceController extends ChangeNotifier {
       hasMore = true;
       attendanceHistory.clear();
     }
-    
+
     errorMessage = null;
     notifyListeners();
 
     try {
-      final data = await _attendanceCollection.find(
-        where.sortBy('created_at', descending: true)
-             .skip(currentPage * limit)
-             .limit(limit),
-      ).toList();
+      final data = await _attendanceCollection
+          .find(
+            where
+                .sortBy('created_at', descending: true)
+                .skip(currentPage * limit)
+                .limit(limit),
+          )
+          .toList();
 
       final newRecords = data.map((e) => AttendanceModel.fromMap(e)).toList();
-      
+
       if (newRecords.length < limit) {
         hasMore = false;
       }
-      
+
       attendanceHistory.addAll(newRecords);
     } catch (e) {
       debugPrint("Error fetching attendance: $e");
@@ -78,7 +82,7 @@ class AttendanceController extends ChangeNotifier {
         return false;
       }
 
-      return await _saveAttendance(member);
+      return await _saveAttendance(member as MemberModel);
     } catch (e) {
       debugPrint("Error marking attendance via QR: $e");
       errorMessage = "Failed to mark attendance.";
@@ -110,10 +114,11 @@ class AttendanceController extends ChangeNotifier {
   /// Helper method to save the attendance record
   Future<bool> _saveAttendance(MemberModel member) async {
     final now = DateTime.now();
-    
+
     // Format date and time
     final dateStr = _formatDate(now);
-    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final timeStr =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
     final attendance = AttendanceModel(
       id: '', // Empty ID, will be generated as ObjectId in toMap
@@ -125,11 +130,11 @@ class AttendanceController extends ChangeNotifier {
     );
 
     await _attendanceCollection.insert(attendance.toMap());
-    
+
     // Add to local list and sort
     attendanceHistory.insert(0, attendance);
     _sortAttendance();
-    
+
     return true;
   }
 
@@ -144,7 +149,20 @@ class AttendanceController extends ChangeNotifier {
 
   String _formatDate(DateTime date) {
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
 
     final dayName = days[date.weekday - 1];
     final monthName = months[date.month - 1];

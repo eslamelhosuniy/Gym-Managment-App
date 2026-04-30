@@ -168,4 +168,8 @@ class MemberController extends ChangeNotifier {
     if (expiry == null) return 'Active';
     return expiry.isBefore(DateTime.now()) ? 'Expired' : 'Active';
   }
+
+  Future<dynamic> searchMembersLocally(String query) async {}
+
+  Future<Object?> findByQrCode(String qrCodeId) async {}
 }

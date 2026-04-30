@@ -1,6 +1,5 @@
-// lib/features/members/views/members_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:gym_management_app/core/theme/theme.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
@@ -53,13 +52,9 @@ class _MembersScreenState extends State<MembersScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddMemberScreen(),
-                ),
-              ).then((_) => controller.getMembers());
+            onPressed: () async {
+              await context.pushNamed('addMember');
+              controller.getMembers();
             },
           ),
         ],
@@ -252,13 +247,10 @@ class _MembersScreenState extends State<MembersScreen> {
                                 ),
                                 // ✅ Navigate to details on tap
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          MemberDetailsScreen(member: member),
-                                    ),
-                                  ).then((_) => controller.getMembers());
+                                  context.pushNamed(
+                                    'memberDetails',
+                                    extra: member,
+                                  );
                                 },
                               ),
                             );
