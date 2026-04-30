@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/attendance_controller.dart';
+import '../../members/models/member_model.dart';
 import 'qr_scanner_screen.dart';
 
 class AttendanceScreen extends StatefulWidget {
@@ -9,83 +12,28 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  final List<Map<String, dynamic>> attendanceHistory = [
-    {
-      "name": "John Smith",
-      "date": "Mon, Jan 5, 2026",
-      "time": "18:30",
-      "createdAt": DateTime(2026, 1, 5, 18, 30),
-    },
-    {
-      "name": "Sarah Johnson",
-      "date": "Mon, Jan 5, 2026",
-      "time": "08:30",
-      "createdAt": DateTime(2026, 1, 5, 8, 30),
-    },
-    {
-      "name": "Mike Chen",
-      "date": "Mon, Jan 5, 2026",
-      "time": "07:00",
-      "createdAt": DateTime(2026, 1, 5, 7, 0),
-    },
-    {
-      "name": "John Smith",
-      "date": "Sun, Jan 4, 2026",
-      "time": "09:15",
-      "createdAt": DateTime(2026, 1, 4, 9, 15),
-    },
-  ];
-
-  String _formatDate(DateTime date) {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec"
-    ];
-
-    final dayName = days[date.weekday - 1];
-    final monthName = months[date.month - 1];
-
-    return "$dayName, $monthName ${date.day}, ${date.year}";
-  }
-
-  void _sortAttendance() {
-    attendanceHistory.sort(
-      (a, b) => b["createdAt"].compareTo(a["createdAt"]),
-    );
-  }
-
-  void markAttendance({String name = "Manual Check-in"}) {
-    final now = DateTime.now();
-
-    setState(() {
-      attendanceHistory.add({
-        "name": name,
-        "date": _formatDate(now),
-        "time":
-            "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}",
-        "createdAt": now,
-      });
-
-      _sortAttendance();
+  final ScrollController _scrollController = ScrollController();
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        context.read<AttendanceController>().fetchAttendanceHistory(isLoadMore: true);
+      }
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Attendance marked for $name"),
-        backgroundColor: Colors.green,
-      ),
-    );
+    // Fetch data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AttendanceController>().fetchAttendanceHistory();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> scanQrCode() async {
@@ -96,9 +44,37 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
     );
 
-    if (result != null) {
-      markAttendance(name: result.toString());
+    if (result != null && mounted) {
+      final controller = context.read<AttendanceController>();
+      final success = await controller.markAttendanceByQr(result.toString());
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Attendance marked successfully"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(controller.errorMessage ?? "Failed to mark attendance"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
+  }
+
+  void _showManualAttendanceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const _ManualAttendanceDialog();
+      },
+    );
   }
 
   Widget attendanceItem({
@@ -146,10 +122,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _sortAttendance();
+    final controller = context.watch<AttendanceController>();
 
     return SafeArea(
       child: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
@@ -178,11 +155,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    markAttendance();
-                  },
-                  icon: const Icon(Icons.check, color: Colors.white),
-                  label: const Text("Mark Attendance"),
+                  onPressed: _showManualAttendanceDialog,
+                  icon: const Icon(Icons.search, color: Colors.white),
+                  label: const Text("Search Member Manually"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -231,28 +206,137 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Attendance History",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Attendance History",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    if (controller.isInitialLoading)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                  ],
                 ),
                 const SizedBox(height: 16),
-                ...attendanceHistory.map(
-                  (item) => Column(
-                    children: [
-                      attendanceItem(
-                        name: item["name"],
-                        date: item["date"],
-                        time: item["time"],
+                if (controller.attendanceHistory.isEmpty && !controller.isInitialLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        "No attendance records found.",
+                        style: TextStyle(color: Colors.grey),
                       ),
-                      const Divider(height: 1),
-                    ],
+                    ),
+                  )
+                else
+                  ...controller.attendanceHistory.map(
+                    (item) => Column(
+                      children: [
+                        attendanceItem(
+                          name: item.memberName,
+                          date: item.date,
+                          time: item.time,
+                        ),
+                        const Divider(height: 1),
+                      ],
+                    ),
                   ),
-                ),
+                if (controller.isPaginating)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ManualAttendanceDialog extends StatefulWidget {
+  const _ManualAttendanceDialog();
+
+  @override
+  State<_ManualAttendanceDialog> createState() => _ManualAttendanceDialogState();
+}
+
+class _ManualAttendanceDialogState extends State<_ManualAttendanceDialog> {
+  MemberModel? selectedMember;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.read<AttendanceController>();
+
+    return AlertDialog(
+      title: const Text("Search Member"),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Autocomplete<MemberModel>(
+          optionsBuilder: (TextEditingValue textEditingValue) async {
+            if (textEditingValue.text.isEmpty) {
+              return const Iterable<MemberModel>.empty();
+            }
+            return await controller.searchMembers(textEditingValue.text);
+          },
+          displayStringForOption: (MemberModel option) => "${option.fullName} (${option.phoneNumber})",
+          onSelected: (MemberModel selection) {
+            setState(() {
+              selectedMember = selection;
+            });
+          },
+          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              decoration: const InputDecoration(
+                hintText: "Enter name or phone",
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: selectedMember == null
+              ? null
+              : () async {
+                  final success = await controller.markAttendanceByMember(selectedMember!);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Attendance marked for ${selectedMember!.fullName}"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(controller.errorMessage ?? "Error marking attendance"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+          child: const Text("Mark"),
+        ),
+      ],
     );
   }
 }
