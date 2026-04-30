@@ -1,7 +1,10 @@
+// lib/features/members/views/members_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gym_management_app/core/theme/theme.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
+import 'package:gym_management_app/features/members/views/member_details_screen.dart';
 import 'package:gym_management_app/features/members/controllers/member_controller.dart';
 
 class MembersScreen extends StatefulWidget {
@@ -17,17 +20,22 @@ class _MembersScreenState extends State<MembersScreen> {
   @override
   void initState() {
     super.initState();
-    // Load members from DB on screen open
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MemberController>().getMembers();
     });
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   Color getStatusColor(String status) {
     switch (status) {
-      case "Active":
+      case 'Active':
         return Colors.green;
-      case "Expired":
+      case 'Expired':
         return AppTheme.errorColor;
       default:
         return AppTheme.secondaryColor;
@@ -41,7 +49,7 @@ class _MembersScreenState extends State<MembersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Members"),
+        title: const Text('Members'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_outlined),
@@ -51,7 +59,7 @@ class _MembersScreenState extends State<MembersScreen> {
                 MaterialPageRoute(
                   builder: (context) => const AddMemberScreen(),
                 ),
-              ).then((_) => controller.getMembers()); // refresh after add
+              ).then((_) => controller.getMembers());
             },
           ),
         ],
@@ -67,19 +75,19 @@ class _MembersScreenState extends State<MembersScreen> {
                   child: Row(
                     children: [
                       _StatChip(
-                        label: "Total",
+                        label: 'Total',
                         count: controller.total,
                         color: Colors.white24,
                       ),
                       const SizedBox(width: 8),
                       _StatChip(
-                        label: "Active",
+                        label: 'Active',
                         count: controller.active,
                         color: Colors.green.withOpacity(0.25),
                       ),
                       const SizedBox(width: 8),
                       _StatChip(
-                        label: "Expired",
+                        label: 'Expired',
                         count: controller.expired,
                         color: Colors.red.withOpacity(0.25),
                       ),
@@ -95,48 +103,48 @@ class _MembersScreenState extends State<MembersScreen> {
                       TextField(
                         controller: searchController,
                         decoration: const InputDecoration(
-                          hintText: "Search by name or phone",
+                          hintText: 'Search by name or phone',
                           prefixIcon: Icon(Icons.search),
                         ),
-                        onChanged: (value) => controller.setSearch(value),
+                        onChanged: controller.setSearch,
                       ),
                       const SizedBox(height: 12),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children:
-                              ["All", "Active", "Expired", "Expiring Soon"].map(
-                            (filter) {
-                              final isSelected =
-                                  controller.selectedFilter == filter;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  label: Text(
-                                    filter,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : AppTheme.textSecondaryColor,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                              ['All', 'Active', 'Expired', 'Expiring Soon'].map(
+                                (filter) {
+                                  final isSelected =
+                                      controller.selectedFilter == filter;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        filter,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppTheme.textSecondaryColor,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      selectedColor: AppTheme.primaryColor,
+                                      backgroundColor: AppTheme.surfaceColor,
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? AppTheme.primaryColor
+                                            : Colors.grey.shade300,
+                                      ),
+                                      onSelected: (_) =>
+                                          controller.setFilter(filter),
                                     ),
-                                  ),
-                                  selected: isSelected,
-                                  selectedColor: AppTheme.primaryColor,
-                                  backgroundColor: AppTheme.surfaceColor,
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? AppTheme.primaryColor
-                                        : Colors.grey.shade300,
-                                  ),
-                                  onSelected: (_) =>
-                                      controller.setFilter(filter),
-                                ),
-                              );
-                            },
-                          ).toList(),
+                                  );
+                                },
+                              ).toList(),
                         ),
                       ),
                     ],
@@ -149,7 +157,7 @@ class _MembersScreenState extends State<MembersScreen> {
                   child: Row(
                     children: [
                       Text(
-                        "${controller.filteredMembers.length} member${controller.filteredMembers.length != 1 ? 's' : ''}",
+                        '${controller.filteredMembers.length} member${controller.filteredMembers.length != 1 ? 's' : ''}',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -167,12 +175,13 @@ class _MembersScreenState extends State<MembersScreen> {
                               Icon(
                                 Icons.person_search,
                                 size: 60,
-                                color: AppTheme.textSecondaryColor
-                                    .withOpacity(0.4),
+                                color: AppTheme.textSecondaryColor.withOpacity(
+                                  0.4,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                "No members found",
+                                'No members found',
                                 style: theme.textTheme.bodyMedium,
                               ),
                             ],
@@ -196,10 +205,10 @@ class _MembersScreenState extends State<MembersScreen> {
                                   vertical: 6,
                                 ),
                                 leading: CircleAvatar(
-                                  backgroundColor:
-                                      AppTheme.primaryColor.withOpacity(0.1),
+                                  backgroundColor: AppTheme.primaryColor
+                                      .withOpacity(0.1),
                                   child: Text(
-                                    member.fullName[0],
+                                    member.fullName[0].toUpperCase(),
                                     style: const TextStyle(
                                       color: AppTheme.primaryColor,
                                       fontWeight: FontWeight.bold,
@@ -222,12 +231,14 @@ class _MembersScreenState extends State<MembersScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: getStatusColor(member.status)
-                                        .withOpacity(0.1),
+                                    color: getStatusColor(
+                                      member.status,
+                                    ).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: getStatusColor(member.status)
-                                          .withOpacity(0.4),
+                                      color: getStatusColor(
+                                        member.status,
+                                      ).withOpacity(0.4),
                                     ),
                                   ),
                                   child: Text(
@@ -239,6 +250,16 @@ class _MembersScreenState extends State<MembersScreen> {
                                     ),
                                   ),
                                 ),
+                                // ✅ Navigate to details on tap
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          MemberDetailsScreen(member: member),
+                                    ),
+                                  ).then((_) => controller.getMembers());
+                                },
                               ),
                             );
                           },
@@ -249,6 +270,8 @@ class _MembersScreenState extends State<MembersScreen> {
     );
   }
 }
+
+// ── _StatChip ──────────────────────────────────────────────────────────────
 
 class _StatChip extends StatelessWidget {
   final String label;
@@ -272,7 +295,7 @@ class _StatChip extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "$count",
+            '$count',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
