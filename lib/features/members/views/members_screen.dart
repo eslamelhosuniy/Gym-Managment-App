@@ -245,13 +245,13 @@ class _MembersScreenState extends State<MembersScreen> {
                                     ),
                                   ),
                                 ),
-                                // ✅ Navigate to details on tap
-                                onTap: () {
-                                  context.pushNamed(
-                                    'memberDetails',
-                                    extra: member,
-                                  );
-                                },
+                                // // ✅ Navigate to details on tap
+                                // onTap: () {
+                                //   context.pushNamed(
+                                //     'memberDetails',
+                                //     extra: member,
+                                //   );
+                                // },
                               ),
                             );
                           },

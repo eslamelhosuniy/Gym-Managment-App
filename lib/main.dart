@@ -12,6 +12,8 @@ import 'features/auth/data/auth_local_service.dart';
 import 'features/members/controllers/member_controller.dart'; 
 import 'features/dashboard/controllers/dashboard_controller.dart'; 
 import 'features/attendance/controllers/attendance_controller.dart';
+import 'features/trainers/controllers/trainer_controller.dart'; 
+import 'features/plans/controllers/plan_controller.dart'; 
 
 Future<void> main() async {
   // Ensures that the Flutter engine is fully initialized before any
@@ -57,6 +59,12 @@ class O2GymApp extends StatelessWidget {
           ),
           update: (context, memberController, previous) =>
               previous ?? AttendanceController(memberController: memberController),
+        ),
+        ChangeNotifierProvider<TrainerController>(
+          create: (_) => TrainerController(),
+        ),
+        ChangeNotifierProvider<PlanController>(
+          create: (_) => PlanController(),
         ),
       ],
       child: Builder(                          

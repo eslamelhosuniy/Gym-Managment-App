@@ -3,20 +3,22 @@
 import 'package:flutter/material.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import '../models/member_model.dart';
+import '../models/membership_model.dart';
 import 'package:gym_management_app/core/network/db_connection.dart';
 
 class MemberController extends ChangeNotifier {
   DbCollection get _collection =>
       DbConnection.instance.db.collection('members');
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  DbCollection get _membershipsCollection =>
+      DbConnection.instance.db.collection('memberships');
 
   List<MemberModel> members = [];
+  List<MembershipModel> memberShips = [];
+
   bool isLoading = false;
   String _searchQuery = '';
   String _selectedFilter = 'All';
-
-  // ── Getters ────────────────────────────────────────────────────────────────
 
   String get selectedFilter => _selectedFilter;
 
@@ -27,7 +29,6 @@ class MemberController extends ChangeNotifier {
   List<MemberModel> get filteredMembers {
     List<MemberModel> result = members;
 
-    // Apply filter tab
     switch (_selectedFilter) {
       case 'Active':
         result = result.where((m) => m.status == 'Active').toList();
@@ -36,33 +37,21 @@ class MemberController extends ChangeNotifier {
         result = result.where((m) => m.status == 'Expired').toList();
         break;
       case 'Expiring Soon':
-        final soon = DateTime.now().add(const Duration(days: 7));
-        result = result.where((m) {
-          final expiry = DateTime.tryParse(m.expiryDate);
-          if (expiry == null) return false;
-          return expiry.isAfter(DateTime.now()) && expiry.isBefore(soon);
-        }).toList();
+        result = result.where((m) =>
+          m.status == 'Expired'
+        ).toList();
         break;
-      default:
-        break; // 'All' – no filter
     }
 
-    // Apply search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      result = result
-          .where(
-            (m) =>
-                m.fullName.toLowerCase().contains(q) ||
-                m.phoneNumber.contains(q),
-          )
-          .toList();
+      result = result.where((m) =>
+          m.fullName.toLowerCase().contains(q) ||
+          m.phoneNumber.contains(q)).toList();
     }
 
     return result;
   }
-
-  // ── Actions ────────────────────────────────────────────────────────────────
 
   void setSearch(String query) {
     _searchQuery = query;
@@ -74,102 +63,127 @@ class MemberController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetches all members from MongoDB and recalculates statuses.
   Future<void> getMembers() async {
     isLoading = true;
     notifyListeners();
 
     try {
-      final docs = await _collection.find().toList();
-      members = docs.map((doc) {
-        final model = MemberModel.fromMap(doc);
-        // Auto-update status based on expiry date
-        return model.copyWith(status: _resolveStatus(model.expiryDate));
-      }).toList();
+
+      final data = await _collection.find().toList();
+      print("DATA FROM DB: $data");
+
+      members = data.map((e) => MemberModel.fromMap(e)).toList();
     } catch (e) {
-      debugPrint('MemberController.getMembers error: $e');
+      debugPrint('getMembers error: $e');
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Adds a new member to MongoDB and local list.
-  Future<void> addMember({
+  Future<void> addMembership({
+    required int memberId,
+    required int planId,
+    required int assignedTrainerId,
+    required DateTime startDate,
+    required DateTime expiryDate,
+  }) async {
+    final memberShip = MembershipModel(
+      memberShipId: 11237,
+      memberId: memberId,
+      planId: planId,
+      assignedTrainerId: assignedTrainerId,
+      startDate: startDate,
+      expiryDate: expiryDate,
+      paymentStatus: 'Pending',
+      createdAt: DateTime.now(),
+    );
+
+    // 🖨️ Print 2 — what's being inserted into DB
+    debugPrint("=== INSERT TO DB ===");
+    debugPrint("memberShipId: ${memberShip.memberShipId}");
+    debugPrint("memberId: ${memberShip.memberId}");
+    debugPrint("planId: ${memberShip.planId}");
+    debugPrint("trainerId: ${memberShip.assignedTrainerId}");
+    debugPrint("startDate: ${memberShip.startDate}");
+    debugPrint("expiryDate: ${memberShip.expiryDate}");
+    debugPrint("map: ${memberShip.toMap()}"); // 🔥 shows exact DB document
+
+    await _membershipsCollection.insert(memberShip.toMap());
+
+    debugPrint("✅ Inserted to MongoDB successfully!");
+
+    memberShips.add(memberShip);
+    notifyListeners();
+  }
+
+  Future<MemberModel> addMember({
     required String name,
     required String phone,
     required int age,
     required String gender,
-    required String plan,
-    required String trainer,
-    required String startDate,
-    String expiryDate = '',
   }) async {
     final member = MemberModel(
-      id: ObjectId().toHexString(),
-      memberId: DateTime.now().millisecondsSinceEpoch,
+      memberId: 98763,
       fullName: name,
       phoneNumber: phone,
       age: age,
       gender: gender,
-      plan: plan,
-      trainer: trainer,
-      startDate: startDate,
-      expiryDate: expiryDate,
-      isPaid: false,
-      status: _resolveStatus(expiryDate),
+      status: "Active",
       joinedAt: DateTime.now(),
-      qrCodeId: 'QR_${DateTime.now().millisecondsSinceEpoch}',
+      qrCodeId: "QR_${DateTime.now().millisecondsSinceEpoch}",
     );
 
-    await _collection.insert(member.toMap());
+    try {
+      await _collection.insert(member.toMap());
+      members.add(member);
+      notifyListeners();
 
-    members.add(member);
-    notifyListeners();
+      debugPrint('*********member ${member}');
+    } catch (e, stack) {
+      print("❌ Insert error: $e");
+      print(stack);
+      rethrow; // so the UI SnackBar shows
+    }
+
+    return member;
   }
+  // Future<void> renewMembership(String memberId) async {
+  //   final index = members.indexWhere((m) => m.id == memberId);
+  //   if (index == -1) return;
 
-  /// Renews a member's membership by extending expiry by 30 days.
-  Future<void> renewMembership(String memberId) async {
-    final index = members.indexWhere((m) => m.id == memberId);
-    if (index == -1) return;
+  //   final current = members[index];
+  //   final currentExpiry =
+  //       DateTime.tryParse(current.expiryDate) ?? DateTime.now();
 
-    final current = members[index];
-    final currentExpiry =
-        DateTime.tryParse(current.expiryDate) ?? DateTime.now();
-    final base = currentExpiry.isBefore(DateTime.now())
-        ? DateTime.now()
-        : currentExpiry;
-    final newExpiry = base.add(const Duration(days: 30));
-    final newExpiryStr =
-        '${newExpiry.year}-${newExpiry.month.toString().padLeft(2, '0')}-${newExpiry.day.toString().padLeft(2, '0')}';
+  //   final base = currentExpiry.isBefore(DateTime.now())
+  //       ? DateTime.now()
+  //       : currentExpiry;
 
-    final updated = current.copyWith(
-      expiryDate: newExpiryStr,
-      status: 'Active',
-      isPaid: true,
-    );
+  //   final newExpiry = base.add(const Duration(days: 30));
 
-    await _collection.update(
-      where.eq('_id', current.id),
-      modify
-          .set('expiry_date', newExpiryStr)
-          .set('status', 'Active')
-          .set('is_paid', true),
-    );
+  //   final newExpiryStr =
+  //       '${newExpiry.year}-${newExpiry.month.toString().padLeft(2, '0')}-${newExpiry.day.toString().padLeft(2, '0')}';
 
-    members[index] = updated;
-    notifyListeners();
-  }
+  //   final updated = current.copyWith(
+  //     expiryDate: newExpiryStr,
+  //     status: 'Active',
+  //     isPaid: true,
+  //   );
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  //   await _collection.update(
+  //     where.eq('_id', current.id),
+  //     modify
+  //         .set('expiry_date', newExpiryStr)
+  //         .set('status', 'Active')
+  //         .set('is_paid', true),
+  //   );
 
-  String _resolveStatus(String expiryDate) {
-    final expiry = DateTime.tryParse(expiryDate);
-    if (expiry == null) return 'Active';
-    return expiry.isBefore(DateTime.now()) ? 'Expired' : 'Active';
-  }
+  //   members[index] = updated;
+  //   notifyListeners();
+  // }
+
 
   Future<dynamic> searchMembersLocally(String query) async {}
-
   Future<Object?> findByQrCode(String qrCodeId) async {}
 }

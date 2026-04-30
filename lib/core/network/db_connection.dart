@@ -60,6 +60,13 @@ class DbConnection {
     }
   }
 
+  Future<void> ensureConnected() async {
+    if (!isConnected) {
+      dev.log('Reconnecting to MongoDB...', name: 'DbConnection');
+      await connect();
+    }
+  }
+  
   Future<void> disconnect() async {
     if (!isConnected) return;
 

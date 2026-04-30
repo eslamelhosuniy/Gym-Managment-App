@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:gym_management_app/features/auth/views/login_screen.dart';
 import 'package:gym_management_app/features/members/models/member_model.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
-import 'package:gym_management_app/features/members/views/member_details_screen.dart';
+import 'package:gym_management_app/features/members/views/add_member_step2_screen.dart';
+// import 'package:gym_management_app/features/members/views/member_details_screen.dart';
 import 'package:gym_management_app/features/members/views/members_screen.dart';
 import 'package:gym_management_app/features/dashboard/views/admin_dashboard_screen.dart';
 import 'package:gym_management_app/features/trainers/views/trainers_list_screen.dart';
@@ -17,6 +18,7 @@ class AppRouter {
   static const String dashboard = '/dashboard';
   static const String members = '/members';
   static const String addMember = '/add-member';
+   static const String addMemberStep2 = '/add-member-step2';
   static const String trainers = '/trainers';
   static const String attendance = '/attendance';
 
@@ -46,14 +48,14 @@ class AppRouter {
             name: 'members',
             builder: (context, state) => const MembersScreen(),
           ),
-          GoRoute(
-            path: '/member-details',
-            name: 'memberDetails',
-            builder: (context, state) {
-              final member = state.extra as MemberModel;
-              return MemberDetailsScreen(member: member);
-            },
-          ),
+          // GoRoute(
+          //   path: '/member-details',
+          //   name: 'memberDetails',
+          //   builder: (context, state) {
+          //     final member = state.extra as MemberModel;
+          //     return MemberDetailsScreen(member: member);
+          //   },
+          // ),
 
           GoRoute(
             path: trainers,
@@ -72,6 +74,20 @@ class AppRouter {
             name: 'addMember',
             builder: (context, state) => const AddMemberScreen(),
           ),
+
+          // ✅ Step 2 (مع parameter)
+          GoRoute(
+            path: '$addMemberStep2/:memberId',
+            name: 'addMemberStep2',
+            builder: (context, state) {
+              final memberId =
+                  int.parse(state.pathParameters['memberId']!);
+
+              return AddMemberStep2Screen(
+                memberId: memberId,
+              );
+            }
+          )
         ],
       ),
     ],

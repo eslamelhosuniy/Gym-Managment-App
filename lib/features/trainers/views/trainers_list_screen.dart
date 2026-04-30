@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/trainer_controller.dart';
 
-class TrainersListScreen extends StatelessWidget {
+class TrainersListScreen extends StatefulWidget {
   const TrainersListScreen({super.key});
+
+  @override
+  State<TrainersListScreen> createState() => _TrainersListScreenState();
+}
+
+class _TrainersListScreenState extends State<TrainersListScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TrainerController>().getTrainers();
+    });
+  }
 
   Widget trainerCard({
     required String name,
@@ -18,9 +35,7 @@ class TrainersListScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
-            child: Icon(Icons.person),
-          ),
+          const CircleAvatar(child: Icon(Icons.person)),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,34 +53,44 @@ class TrainersListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            "Trainers",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            "View all gym trainers",
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-          trainerCard(
-            name: "John Smith",
-            phone: "+1 234-567-8901",
-            members: "15 assigned members",
-          ),
-          trainerCard(
-            name: "Sarah Johnson",
-            phone: "+1 234-567-8902",
-            members: "12 assigned members",
-          ),
-          trainerCard(
-            name: "Mike Chen",
-            phone: "+1 234-567-8903",
-            members: "18 assigned members",
-          ),
-        ],
+      child: Consumer<TrainerController>(
+        builder: (context, controller, child) {
+
+          if (controller.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (controller.errorMessage != null) {
+            return Center(child: Text(controller.errorMessage!));
+          }
+
+          if (controller.trainers.isEmpty) {
+            return const Center(child: Text("No trainers found"));
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                "Trainers",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const Text(
+                "View all gym trainers",
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+
+              ...controller.trainers.map((trainer) {
+                return trainerCard(
+                  name: trainer.fullName,
+                  phone: trainer.phoneNumber,
+                  members: "Assigned members",
+                );
+              }).toList(),
+            ],
+          );
+        },
       ),
     );
   }

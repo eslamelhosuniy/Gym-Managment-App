@@ -122,7 +122,7 @@ class AttendanceController extends ChangeNotifier {
 
     final attendance = AttendanceModel(
       id: '', // Empty ID, will be generated as ObjectId in toMap
-      memberId: member.id, // MongoDB _id
+      memberId: (member.memberId).toString(), 
       memberName: member.fullName,
       date: dateStr,
       time: timeStr,
