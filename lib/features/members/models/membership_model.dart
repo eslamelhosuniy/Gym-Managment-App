@@ -1,15 +1,17 @@
+import 'package:mongo_dart/mongo_dart.dart';
+
 class MembershipModel {
-  final int memberShipId;
-  final int memberId;
-  final int planId;
-  final int assignedTrainerId;
+  final String id;
+  final String memberId;
+  final String planId;
+  final String assignedTrainerId;
   final DateTime startDate;
   final DateTime expiryDate;
   final String paymentStatus;
   final DateTime createdAt;
 
   MembershipModel({
-    required this.memberShipId,
+    this.id = '',
     required this.memberId,
     required this.planId,
     required this.assignedTrainerId,
@@ -21,10 +23,10 @@ class MembershipModel {
 
   factory MembershipModel.fromJson(Map<String, dynamic> map) {
     return MembershipModel(
-      memberShipId: map['id'] ?? 0,
-      memberId: map['member_id'] ?? 0,
-      planId: map['plan_id'] ?? 0,
-      assignedTrainerId: map['assigned_trainer_id'] ?? 0,
+      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
+      memberId: (map['member_id'] as ObjectId?)?.toHexString() ?? map['member_id']?.toString() ?? '',
+      planId: (map['plan_id'] as ObjectId?)?.toHexString() ?? map['plan_id']?.toString() ?? '',
+      assignedTrainerId: (map['assigned_trainer_id'] as ObjectId?)?.toHexString() ?? map['assigned_trainer_id']?.toString() ?? '',
 
       startDate: map['start_date'] is DateTime
           ? map['start_date']
@@ -47,16 +49,17 @@ class MembershipModel {
 
   // ✅ دي اللي الكونترولر محتاجها
   Map<String, dynamic> toMap() {
-    return {
-      'id': memberShipId,
-      'member_id': memberId,
-      'plan_id': planId,
-      'assigned_trainer_id': assignedTrainerId,
+    final data = <String, dynamic>{
       'start_date': startDate.toIso8601String(),
       'expiry_date': expiryDate.toIso8601String(),
       'payment_status': paymentStatus,
       'created_at': createdAt.toIso8601String(),
     };
+    if (id.isNotEmpty) data['_id'] = ObjectId.parse(id);
+    if (memberId.isNotEmpty) data['member_id'] = ObjectId.parse(memberId);
+    if (planId.isNotEmpty) data['plan_id'] = ObjectId.parse(planId);
+    if (assignedTrainerId.isNotEmpty) data['assigned_trainer_id'] = ObjectId.parse(assignedTrainerId);
+    return data;
   }
 
   Map<String, dynamic> toJson() => toMap();

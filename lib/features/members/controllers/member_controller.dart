@@ -37,17 +37,19 @@ class MemberController extends ChangeNotifier {
         result = result.where((m) => m.status == 'Expired').toList();
         break;
       case 'Expiring Soon':
-        result = result.where((m) =>
-          m.status == 'Expired'
-        ).toList();
+        result = result.where((m) => m.status == 'Expired').toList();
         break;
     }
 
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      result = result.where((m) =>
-          m.fullName.toLowerCase().contains(q) ||
-          m.phoneNumber.contains(q)).toList();
+      result = result
+          .where(
+            (m) =>
+                m.fullName.toLowerCase().contains(q) ||
+                m.phoneNumber.contains(q),
+          )
+          .toList();
     }
 
     return result;
@@ -68,7 +70,6 @@ class MemberController extends ChangeNotifier {
     notifyListeners();
 
     try {
-
       final data = await _collection.find().toList();
       print("DATA FROM DB: $data");
 
@@ -82,14 +83,13 @@ class MemberController extends ChangeNotifier {
   }
 
   Future<void> addMembership({
-    required int memberId,
-    required int planId,
-    required int assignedTrainerId,
+    required String memberId,
+    required String planId,
+    required String assignedTrainerId,
     required DateTime startDate,
     required DateTime expiryDate,
   }) async {
     final memberShip = MembershipModel(
-      memberShipId: 11237,
       memberId: memberId,
       planId: planId,
       assignedTrainerId: assignedTrainerId,
@@ -101,19 +101,19 @@ class MemberController extends ChangeNotifier {
 
     // 🖨️ Print 2 — what's being inserted into DB
     debugPrint("=== INSERT TO DB ===");
-    debugPrint("memberShipId: ${memberShip.memberShipId}");
     debugPrint("memberId: ${memberShip.memberId}");
     debugPrint("planId: ${memberShip.planId}");
     debugPrint("trainerId: ${memberShip.assignedTrainerId}");
     debugPrint("startDate: ${memberShip.startDate}");
     debugPrint("expiryDate: ${memberShip.expiryDate}");
-    debugPrint("map: ${memberShip.toMap()}"); // 🔥 shows exact DB document
 
-    await _membershipsCollection.insert(memberShip.toMap());
+    final doc = memberShip.toMap();
+    await _membershipsCollection.insert(doc);
 
     debugPrint("✅ Inserted to MongoDB successfully!");
 
-    memberShips.add(memberShip);
+    final insertedMembership = MembershipModel.fromJson(doc);
+    memberShips.add(insertedMembership);
     notifyListeners();
   }
 
@@ -124,7 +124,6 @@ class MemberController extends ChangeNotifier {
     required String gender,
   }) async {
     final member = MemberModel(
-      memberId: 98763,
       fullName: name,
       phoneNumber: phone,
       age: age,
@@ -135,18 +134,20 @@ class MemberController extends ChangeNotifier {
     );
 
     try {
-      await _collection.insert(member.toMap());
-      members.add(member);
+      final doc = member.toMap();
+      await _collection.insert(doc);
+
+      final insertedMember = MemberModel.fromMap(doc);
+      members.add(insertedMember);
       notifyListeners();
 
-      debugPrint('*********member ${member}');
+      debugPrint('*********member ${insertedMember}');
+      return insertedMember;
     } catch (e, stack) {
       print("❌ Insert error: $e");
       print(stack);
       rethrow; // so the UI SnackBar shows
     }
-
-    return member;
   }
   // Future<void> renewMembership(String memberId) async {
   //   final index = members.indexWhere((m) => m.id == memberId);
@@ -183,7 +184,75 @@ class MemberController extends ChangeNotifier {
   //   notifyListeners();
   // }
 
+  Future<MemberModel?> findByQrCode(String qrCode) async {
+    debugPrint("QR Code: $qrCode");
 
-  Future<dynamic> searchMembersLocally(String query) async {}
-  Future<Object?> findByQrCode(String qrCodeId) async {}
+    // 1. Search locally first
+    final localMatch = members.where((m) => m.qrCodeId == qrCode).firstOrNull;
+
+    if (localMatch != null) {
+      return localMatch;
+    }
+
+    // 2. Fallback to Database
+    try {
+      final data = await _collection.findOne(where.eq('qr_code_id', qrCode));
+      if (data != null) {
+        final member = MemberModel.fromMap(data);
+        // Cache it locally
+        if (!members.any((m) => m.id == member.id)) {
+          members.add(member);
+        }
+        return member;
+      }
+    } catch (dbError) {
+      debugPrint("Error fetching QR from DB: $dbError");
+    }
+    return null;
+  }
+
+  Future<List<MemberModel>> searchMembersLocally(String query) async {
+    if (query.isEmpty) return [];
+    final q = query.toLowerCase();
+
+    // 1. Search locally first
+    var localResults = members
+        .where(
+          (m) =>
+              m.fullName.toLowerCase().contains(q) ||
+              m.phoneNumber.toLowerCase().contains(q) ||
+              m.id.toString() == q,
+        )
+        .toList();
+
+    // 2. Fallback to Database if no local results found
+    if (localResults.isEmpty) {
+      try {
+        final dbData = await _collection
+            .find(
+              where
+                  .match('full_name', q, caseInsensitive: true)
+                  .or(where.match('phone_number', q))
+                  .or(where.eq('id', int.tryParse(q) ?? -1))
+                  .limit(10), // Limit DB search to 10
+            )
+            .toList();
+
+        final dbResults = dbData.map((e) => MemberModel.fromMap(e)).toList();
+
+        // Cache DB results locally
+        for (var member in dbResults) {
+          if (!members.any((m) => m.id == member.id)) {
+            members.add(member);
+          }
+        }
+        return dbResults;
+      } catch (dbError) {
+        debugPrint("Error searching members in DB: $dbError");
+        return [];
+      }
+    }
+
+    return localResults;
+  }
 }

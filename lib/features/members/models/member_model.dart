@@ -1,5 +1,7 @@
+import 'package:mongo_dart/mongo_dart.dart';
+
 class MemberModel {
-  final int memberId;
+  final String id;
   final String fullName;
   final String phoneNumber;
   final int age;
@@ -9,7 +11,7 @@ class MemberModel {
   final String qrCodeId;
 
   const MemberModel({
-    required this.memberId,
+    this.id = '',
     required this.fullName,
     required this.phoneNumber,
     required this.age,
@@ -21,7 +23,7 @@ class MemberModel {
 
   factory MemberModel.fromMap(Map<String, dynamic> map) {
     return MemberModel(
-      memberId: (map['id'] ?? 0).toInt(),
+      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
       fullName: map['full_name'] ?? '',
       phoneNumber: map['phone_number'] ?? '',
       age: (map['age'] ?? 0).toInt(),
@@ -34,19 +36,24 @@ class MemberModel {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        'id': memberId,
-        'full_name': fullName,
-        'phone_number': phoneNumber,
-        'age': age,
-        'gender': gender,
-        'status': status,
-        'joined_at': joinedAt.toIso8601String(),
-        'qr_code_id': qrCodeId,
-      };
+  Map<String, dynamic> toMap() {
+    final data = <String, dynamic>{
+      'full_name': fullName,
+      'phone_number': phoneNumber,
+      'age': age,
+      'gender': gender,
+      'status': status,
+      'joined_at': joinedAt.toIso8601String(),
+      'qr_code_id': qrCodeId,
+    };
+    if (id.isNotEmpty) {
+      data['_id'] = ObjectId.parse(id);
+    }
+    return data;
+  }
 
   @override
   String toString() {
-    return 'MemberModel(memberId: $memberId,  name: $fullName, phone: $phoneNumber, status: $status )';
+    return 'MemberModel(id: $id,  name: $fullName, phone: $phoneNumber, status: $status )';
   }
 }

@@ -9,7 +9,7 @@ class AttendanceModel {
   final DateTime createdAt;
 
   const AttendanceModel({
-    required this.id,
+    this.id = '',
     required this.memberId,
     required this.memberName,
     required this.date,
@@ -19,8 +19,8 @@ class AttendanceModel {
 
   factory AttendanceModel.fromMap(Map<String, dynamic> map) {
     return AttendanceModel(
-      id: (map['_id'] ?? '').toString(),
-      memberId: map['member_id']?.toString() ?? '',
+      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
+      memberId: (map['member_id'] as ObjectId?)?.toHexString() ?? map['member_id']?.toString() ?? '',
       memberName: map['member_name']?.toString() ?? 'Unknown',
       date: map['date']?.toString() ?? '',
       time: map['time']?.toString() ?? '',
@@ -31,14 +31,19 @@ class AttendanceModel {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      '_id': id.isEmpty ? ObjectId() : (ObjectId.tryParse(id) ?? id),
-      'member_id': memberId,
+    final data = <String, dynamic>{
       'member_name': memberName,
       'date': date,
       'time': time,
       'created_at': createdAt,
     };
+    if (id.isNotEmpty) {
+      data['_id'] = ObjectId.parse(id);
+    }
+    if (memberId.isNotEmpty) {
+      data['member_id'] = ObjectId.parse(memberId);
+    }
+    return data;
   }
 
   @override

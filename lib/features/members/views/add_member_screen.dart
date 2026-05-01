@@ -64,7 +64,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => AddMemberStep2Screen(
-            memberId: member.memberId!,
+            memberId: member.id,
           ),
         ),
       );

@@ -1,13 +1,13 @@
+import 'package:mongo_dart/mongo_dart.dart';
+
 class PlanModel {
   final String id;
-  final int planId;
   final String planName;
   final int durationDays;
   final int price;
 
   PlanModel({
-    required this.id,
-    required this.planId,
+    this.id = '',
     required this.planName,
     required this.durationDays,
     required this.price,
@@ -23,8 +23,7 @@ class PlanModel {
   // ✅ fromMap — reads from MongoDB document
   factory PlanModel.fromMap(Map<String, dynamic> map) {
     return PlanModel(
-      id: map['_id'].toString(),
-      planId: map['id'] ?? 0,
+      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
       planName: map['plan_name'] ?? '',
       durationDays: map['duration_days'] ?? 0,
       price: num.tryParse(map['price'].toString())?.toInt() ?? 0,
@@ -33,12 +32,12 @@ class PlanModel {
 
   // ✅ toMap — sends to MongoDB
   Map<String, dynamic> toMap() {
-    return {
-      '_id': id,
-      'id': planId,
+    final data = <String, dynamic>{
       'plan_name': planName,
       'duration_days': durationDays,
       'price': price,
     };
+    if (id.isNotEmpty) data['_id'] = ObjectId.parse(id);
+    return data;
   }
 }

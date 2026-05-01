@@ -7,7 +7,7 @@ import 'package:gym_management_app/features/trainers/controllers/trainer_control
 import 'package:gym_management_app/features/plans/models/plan_model.dart';
 
 class AddMemberStep2Screen extends StatefulWidget {
-  final int memberId;
+  final String memberId;
 
   const AddMemberStep2Screen({
     super.key,
@@ -23,7 +23,7 @@ class _AddMemberStep2ScreenState extends State<AddMemberStep2Screen> {
   final startDateController = TextEditingController();
 
   PlanModel? selectedPlan;
-  int? selectedTrainer;
+  String? selectedTrainerId;
 
   bool isSaving = false;
 
@@ -57,16 +57,16 @@ class _AddMemberStep2ScreenState extends State<AddMemberStep2Screen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (selectedPlan == null || selectedTrainer == null) return;
+    if (selectedPlan == null || selectedTrainerId == null) return;
 
     setState(() => isSaving = true);
 
     // 🖨️ Print 1 — what we're sending
     debugPrint("=== SAVE MEMBERSHIP ===");
     debugPrint("memberId: ${widget.memberId}");
-    debugPrint("planId: ${selectedPlan!.planId}");
+    debugPrint("planId: ${selectedPlan!.id}");
     debugPrint("planName: ${selectedPlan!.planName}");
-    debugPrint("trainerId: $selectedTrainer");
+    debugPrint("trainerId: $selectedTrainerId");
     debugPrint("startDate: ${startDateController.text}");
 
     try {
@@ -77,8 +77,8 @@ class _AddMemberStep2ScreenState extends State<AddMemberStep2Screen> {
 
       await context.read<MemberController>().addMembership(
         memberId: widget.memberId,
-        planId: selectedPlan!.planId,
-        assignedTrainerId: selectedTrainer!,
+        planId: selectedPlan!.id,
+        assignedTrainerId: selectedTrainerId!,
         startDate: startDate,
         expiryDate: expiryDate,
       );
@@ -154,19 +154,19 @@ class _AddMemberStep2ScreenState extends State<AddMemberStep2Screen> {
               // ✅ Trainer
               trainerController.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : DropdownButtonFormField<int>(
-                  value: selectedTrainer,
+              : DropdownButtonFormField<String>(
+                  value: selectedTrainerId,
                   decoration: const InputDecoration(
                     labelText: 'Trainer',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  items: trainerController.trainers.map<DropdownMenuItem<int>>((t) {
-                    return DropdownMenuItem<int>(
-                      value: t.trainerId,
+                  items: trainerController.trainers.map<DropdownMenuItem<String>>((t) {
+                    return DropdownMenuItem<String>(
+                      value: t.id,
                       child: Text(t.fullName),
                     );
                   }).toList(),
-                  onChanged: (v) => setState(() => selectedTrainer = v),
+                  onChanged: (v) => setState(() => selectedTrainerId = v),
                   validator: (v) => v == null ? 'Please select a trainer' : null,
                 ),
 

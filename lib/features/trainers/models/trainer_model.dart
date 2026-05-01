@@ -1,17 +1,15 @@
+import 'package:mongo_dart/mongo_dart.dart';
+
 class TrainerModel {
   final String id; // _id
-  final int trainerId; // id
   final String fullName;
   final String phoneNumber;
   final Map<String, dynamic>? schedule; // schedule_json
   final String bio;
   final DateTime createdAt;
 
-
-
   TrainerModel({
-    required this.id,
-    required this.trainerId,
+    this.id = '',
     required this.fullName,
     required this.phoneNumber,
     this.schedule,
@@ -27,8 +25,7 @@ class TrainerModel {
   // 🔹 From MAP
     factory TrainerModel.fromJson(Map<String, dynamic> map) {
     return TrainerModel(
-      id: map['_id'].toString(),
-      trainerId: map['id'] ?? 0,
+      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
       fullName: map['full_name'] ?? '',
       phoneNumber: map['phone_number'] ?? '',
       schedule: map['schedule_json'],
@@ -42,14 +39,14 @@ class TrainerModel {
 
   // 🔹 To JSON
   Map<String, dynamic> toJson() {
-    return {
-      '_id': id,
-      'id': trainerId,
+    final data = <String, dynamic>{
       'full_name': fullName,
       'phone_number': phoneNumber,
       'schedule_json': schedule,
       'bio': bio,
       'created_at': createdAt.toIso8601String(),
     };
+    if (id.isNotEmpty) data['_id'] = ObjectId.parse(id);
+    return data;
   }
 }

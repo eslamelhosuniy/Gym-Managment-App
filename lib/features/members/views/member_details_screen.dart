@@ -60,7 +60,7 @@
 //                   ),
 //                   const SizedBox(height: 4),
 //                   Text(
-//                     'ID: ${liveMember.memberId}',
+//                     'ID: ${liveMember.id}',
 //                     style: const TextStyle(color: Colors.grey, fontSize: 12),
 //                   ),
 //                 ],

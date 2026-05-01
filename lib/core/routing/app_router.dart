@@ -80,8 +80,7 @@ class AppRouter {
             path: '$addMemberStep2/:memberId',
             name: 'addMemberStep2',
             builder: (context, state) {
-              final memberId =
-                  int.parse(state.pathParameters['memberId']!);
+              final memberId = state.pathParameters['memberId']!;
 
               return AddMemberStep2Screen(
                 memberId: memberId,

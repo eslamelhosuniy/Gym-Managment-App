@@ -121,18 +121,21 @@ class AttendanceController extends ChangeNotifier {
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
     final attendance = AttendanceModel(
-      id: '', // Empty ID, will be generated as ObjectId in toMap
-      memberId: (member.memberId).toString(), 
+      id: '', // Empty ID, will be let Mongo generate it
+      memberId: member.id, 
       memberName: member.fullName,
       date: dateStr,
       time: timeStr,
       createdAt: now,
     );
 
-    await _attendanceCollection.insert(attendance.toMap());
+    final doc = attendance.toMap();
+    await _attendanceCollection.insert(doc);
+    
+    final insertedAttendance = AttendanceModel.fromMap(doc);
 
     // Add to local list and sort
-    attendanceHistory.insert(0, attendance);
+    attendanceHistory.insert(0, insertedAttendance);
     _sortAttendance();
 
     return true;
