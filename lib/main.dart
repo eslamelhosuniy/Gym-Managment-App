@@ -28,24 +28,26 @@ Future<void> main() async {
   } on DbConnectionException catch (e) {
     dev.log('Startup: DB connection failed — $e', name: 'main', error: e);
   }
-  runApp(const O2GymApp());
+
+  // Restore session BEFORE building the widget tree
+  final authController = AuthController(AuthLocalService());
+  await authController.tryRestoreSession();
+
+  runApp(O2GymApp(authController: authController));
 }
 
 class O2GymApp extends StatelessWidget {
-  const O2GymApp({super.key});
+  final AuthController authController;
+
+  const O2GymApp({super.key, required this.authController});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // AuthController depends on AuthLocalService.
-        ChangeNotifierProvider<AuthController>(
-          create: (_) {
-            final controller = AuthController(AuthLocalService());
-            // Restore any existing session from local storage on boot.
-            controller.tryRestoreSession();
-            return controller;
-          },
+        // AuthController — already initialized with restored session.
+        ChangeNotifierProvider<AuthController>.value(
+          value: authController,
         ),
         ChangeNotifierProvider<MemberController>(
           create: (_) => MemberController(),
@@ -73,7 +75,7 @@ class O2GymApp extends StatelessWidget {
             title: 'O2 Gym Management',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
-            routerConfig: AppRouter.router,
+            routerConfig: AppRouter.createRouter(authController),
           );
         },
       ),);

@@ -11,14 +11,18 @@ class AdminModel {
     required this.fullName,
   });
 
+  /// From MongoDB document (contains ObjectId)
   factory AdminModel.fromMap(Map<String, dynamic> map) {
     return AdminModel(
-      id: (map['_id'] as ObjectId?)?.toHexString() ?? map['_id']?.toString() ?? '',
+      id: (map['_id'] is ObjectId)
+          ? (map['_id'] as ObjectId).toHexString()
+          : map['_id']?.toString() ?? '',
       email: map['email'] as String? ?? '',
       fullName: map['full_name'] as String? ?? '',
     );
   }
 
+  /// For MongoDB operations (ObjectId)
   Map<String, dynamic> toMap() {
     final data = <String, dynamic>{
       'email': email,
@@ -29,6 +33,13 @@ class AdminModel {
     }
     return data;
   }
+
+  /// For local storage (SharedPreferences) — plain JSON-safe types only
+  Map<String, dynamic> toJsonLocal() => {
+        '_id': id,
+        'email': email,
+        'full_name': fullName,
+      };
 
   @override
   String toString() => 'AdminModel(id: $id, email: $email, name: $fullName)';

@@ -11,7 +11,7 @@ class AuthLocalService {
   Future<void> saveSession(AdminModel admin) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsLoggedIn, true);
-    await prefs.setString(_keyAdminJson, jsonEncode(admin.toMap()));
+    await prefs.setString(_keyAdminJson, jsonEncode(admin.toJsonLocal()));
   }
 
 
