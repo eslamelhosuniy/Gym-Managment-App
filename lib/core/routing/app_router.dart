@@ -9,8 +9,13 @@ import 'package:gym_management_app/features/members/views/add_member_step2_scree
 import 'package:gym_management_app/features/members/views/members_screen.dart';
 import 'package:gym_management_app/features/dashboard/views/admin_dashboard_screen.dart';
 import 'package:gym_management_app/features/trainers/views/trainers_list_screen.dart';
+import 'package:gym_management_app/features/trainers/views/trainer_details_screen.dart';
+import 'package:gym_management_app/features/trainers/views/add_trainer_screen.dart';
 import 'package:gym_management_app/features/attendance/views/attendance_screen.dart';
 import 'package:gym_management_app/features/auth/controllers/auth_controller.dart';
+import 'package:gym_management_app/features/plans/views/plans_screen.dart';
+import 'package:gym_management_app/features/plans/views/plan_details_screen.dart';
+import 'package:gym_management_app/features/plans/views/add_plan_screen.dart';
 
 import 'package:gym_management_app/core/layout/main_layout.dart';
 
@@ -19,9 +24,12 @@ class AppRouter {
   static const String dashboard = '/dashboard';
   static const String members = '/members';
   static const String addMember = '/add-member';
-   static const String addMemberStep2 = '/add-member-step2';
+  static const String addMemberStep2 = '/add-member-step2';
   static const String trainers = '/trainers';
+  static const String addTrainer = '/add-trainer';
   static const String attendance = '/attendance';
+  static const String plans = '/plans';
+  static const String addPlan = '/add-plan';
 
   static GoRouter createRouter(AuthController authController) {
     return GoRouter(
@@ -82,9 +90,33 @@ class AppRouter {
             ),
 
             GoRoute(
+              path: '/trainers/:id',
+              name: 'trainerDetails',
+              builder: (context, state) {
+                final id = state.pathParameters['id'] ?? '';
+                return TrainerDetailsScreen(trainerId: id);
+              },
+            ),
+
+            GoRoute(
               path: attendance,
               name: 'attendance',
               builder: (context, state) => const AttendanceScreen(),
+            ),
+
+            GoRoute(
+              path: plans,
+              name: 'plans',
+              builder: (context, state) => const PlansScreen(),
+            ),
+
+            GoRoute(
+              path: '/plans/:id',
+              name: 'planDetails',
+              builder: (context, state) {
+                final id = state.pathParameters['id'] ?? '';
+                return PlanDetailsScreen(planId: id);
+              },
             ),
 
             GoRoute(
@@ -103,9 +135,21 @@ class AppRouter {
                 return AddMemberStep2Screen(
                   memberId: memberId,
                 );
-              }
-            )
+              },
+            ),
           ],
+        ),
+
+        GoRoute(
+          path: addPlan,
+          name: 'addPlan',
+          builder: (context, state) => const AddPlanScreen(),
+        ),
+
+        GoRoute(
+          path: addTrainer,
+          name: 'addTrainer',
+          builder: (context, state) => const AddTrainerScreen(),
         ),
       ],
       errorBuilder: (context, state) =>
