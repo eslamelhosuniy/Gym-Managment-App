@@ -73,7 +73,7 @@ class MainLayout extends StatelessWidget {
             label: "Attendance",
           ),
         ],
-      ),1
+      ),
     );
   }
 }
