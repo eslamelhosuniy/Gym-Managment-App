@@ -11,7 +11,12 @@ class MainLayout extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
 
     if (location.startsWith(AppRouter.dashboard)) return 0;
-    if (location.startsWith(AppRouter.members)) return 1;
+    if (location.startsWith(AppRouter.members) ||
+        location.startsWith(AppRouter.addMember) ||
+        location.startsWith(AppRouter.addMemberStep2) ||
+        location.startsWith('/member-details')) {
+      return 1;
+    }
     if (location.startsWith(AppRouter.plans)) return 2;
     if (location.startsWith(AppRouter.trainers)) return 3;
     if (location.startsWith(AppRouter.attendance)) return 4;
@@ -56,10 +61,7 @@ class MainLayout extends StatelessWidget {
             icon: Icon(Icons.dashboard),
             label: "Dashboard",
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: "Members",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: "Members"),
           BottomNavigationBarItem(
             icon: Icon(Icons.card_membership),
             label: "Plans",

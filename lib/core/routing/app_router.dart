@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gym_management_app/features/auth/views/login_screen.dart';
-import 'package:gym_management_app/features/members/models/member_model.dart';
+// import 'package:gym_management_app/features/members/models/member_model.dart';
 import 'package:gym_management_app/features/members/views/add_member_screen.dart';
 import 'package:gym_management_app/features/members/views/add_member_step2_screen.dart';
-// import 'package:gym_management_app/features/members/views/member_details_screen.dart';
+import 'package:gym_management_app/features/members/views/member_details_screen.dart';
 import 'package:gym_management_app/features/members/views/members_screen.dart';
 import 'package:gym_management_app/features/dashboard/views/admin_dashboard_screen.dart';
 import 'package:gym_management_app/features/trainers/views/trainers_list_screen.dart';
@@ -23,13 +23,13 @@ class AppRouter {
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String members = '/members';
-  static const String addMember = '/add-member';
-  static const String addMemberStep2 = '/add-member-step2';
+  static const String addMember = '/addMember';
+  static const String addMemberStep2 = '/addMemberStep2';
   static const String trainers = '/trainers';
-  static const String addTrainer = '/add-trainer';
+  static const String addTrainer = '/addTrainer';
   static const String attendance = '/attendance';
   static const String plans = '/plans';
-  static const String addPlan = '/add-plan';
+  static const String addPlan = '/addPlan';
 
   static GoRouter createRouter(AuthController authController) {
     return GoRouter(
@@ -74,14 +74,11 @@ class AppRouter {
               name: 'members',
               builder: (context, state) => const MembersScreen(),
             ),
-            // GoRoute(
-            //   path: '/member-details',
-            //   name: 'memberDetails',
-            //   builder: (context, state) {
-            //     final member = state.extra as MemberModel;
-            //     return MemberDetailsScreen(member: member);
-            //   },
-            // ),
+            GoRoute(
+              path: '/member-details/:id',
+              name: 'memberDetails',
+              builder: (context, state) => const MemberDetailsScreen(),
+            ),
 
             GoRoute(
               path: trainers,
@@ -132,9 +129,7 @@ class AppRouter {
               builder: (context, state) {
                 final memberId = state.pathParameters['memberId']!;
 
-                return AddMemberStep2Screen(
-                  memberId: memberId,
-                );
+                return AddMemberStep2Screen(memberId: memberId);
               },
             ),
           ],
