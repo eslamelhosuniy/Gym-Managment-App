@@ -8,10 +8,12 @@ import 'package:gym_management_app/features/plans/models/plan_model.dart';
 
 class AddMemberStep2Screen extends StatefulWidget {
   final String memberId;
+  final bool fromDetails;
 
   const AddMemberStep2Screen({
     super.key,
     required this.memberId,
+    this.fromDetails = false,
   });
 
   @override
@@ -91,8 +93,11 @@ class _AddMemberStep2ScreenState extends State<AddMemberStep2Screen> {
         const SnackBar(content: Text('Member added successfully!')),
       );
 
-      Navigator.popUntil(context, (route) => route.isFirst);
-
+      if (widget.fromDetails) {
+        Navigator.pop(context, true); // 👈 يرجع للـ details
+      } else {
+        Navigator.popUntil(context, (route) => route.isFirst); // 👈 يرجع للـ list
+      }
     } catch (e) {
       debugPrint("❌ Error saving membership: $e"); // ✅ now you'll see errors
       if (!mounted) return;

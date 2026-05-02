@@ -58,15 +58,50 @@ class TrainerController extends ChangeNotifier {
   }
 
   // 🔹 ADD TRAINER
-  Future<void> addTrainer(TrainerModel trainer) async {
+  Future<void> addTrainer({
+    required String fullName,
+    required String phoneNumber,
+    required String bio,
+    required Map<String, dynamic> schedule,
+  }) async {
+    final trainer = TrainerModel(
+      fullName: fullName,
+      phoneNumber: phoneNumber,
+      bio: bio,
+      schedule: schedule,
+      createdAt: DateTime.now(),
+    );
+
     try {
-      await DbConnection.instance.ensureConnected(); // ✅
-      await _collection.insert(trainer.toJson());
-      trainers.add(trainer);
+      final doc = trainer.toJson();
+      await _collection.insert(doc);
+
+      final insertedTrainer = TrainerModel.fromJson(doc);
+      trainers.add(insertedTrainer);
       notifyListeners();
+
+    } catch (e, stack) {
+      print("❌ Insert error: $e");
+      print(stack);
+      rethrow; 
+    }
+  }
+
+  Future<TrainerModel?> getTrainerById(String id) async {
+    try {
+      await DbConnection.instance.ensureConnected();
+
+      final objId = ObjectId.fromHexString(id);
+
+      final doc = await _collection.findOne({"_id": objId});
+
+      if (doc == null) return null;
+
+      return TrainerModel.fromJson(doc);
+
     } catch (e) {
-      errorMessage = e.toString();
-      dev.log("Error in addTrainer: $e");
+      debugPrint("Error in getTrainerById: $e");
+      return null;
     }
   }
 }

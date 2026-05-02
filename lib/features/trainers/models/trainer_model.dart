@@ -49,4 +49,5 @@ class TrainerModel {
     if (id.isNotEmpty) data['_id'] = ObjectId.parse(id);
     return data;
   }
+  
 }

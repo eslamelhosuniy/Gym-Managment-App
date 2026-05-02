@@ -199,9 +199,9 @@ class _MembersScreenState extends State<MembersScreen> {
                                   horizontal: 16,
                                   vertical: 6,
                                 ),
+
                                 leading: CircleAvatar(
-                                  backgroundColor: AppTheme.primaryColor
-                                      .withOpacity(0.1),
+                                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                                   child: Text(
                                     member.fullName[0].toUpperCase(),
                                     style: const TextStyle(
@@ -210,48 +210,28 @@ class _MembersScreenState extends State<MembersScreen> {
                                     ),
                                   ),
                                 ),
+
                                 title: Text(
                                   member.fullName,
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
+
                                 subtitle: Text(
                                   member.phoneNumber,
                                   style: theme.textTheme.bodyMedium,
                                 ),
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: getStatusColor(
-                                      member.status,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: getStatusColor(
-                                        member.status,
-                                      ).withOpacity(0.4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    member.status,
-                                    style: TextStyle(
-                                      color: getStatusColor(member.status),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+
+                                trailing: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 18,
                                 ),
-                                // // ✅ Navigate to details on tap
-                                // onTap: () {
-                                //   context.pushNamed(
-                                //     'memberDetails',
-                                //     extra: member,
-                                //   );
-                                // },
+
+                                onTap: () {
+                                  context.go('/member-details/${member.id}');
+                                },
+                                
                               ),
                             );
                           },

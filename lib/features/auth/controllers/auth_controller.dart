@@ -22,7 +22,7 @@ class AuthController extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => true;
+  bool get isAuthenticated => _admin != null;
 
   /// Called once at app startup to restore an existing session.
   ///

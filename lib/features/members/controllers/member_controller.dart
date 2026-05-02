@@ -82,6 +82,138 @@ class MemberController extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> getMemberDetails(String memberId) async {
+    try {
+      final objectId = ObjectId.parse(memberId);
+
+      final pipeline = [
+        // 1. member
+        {
+          r'$match': {'_id': objectId}
+        },
+
+        // 2. membership
+        {
+          r'$lookup': {
+            'from': 'memberships',
+            'let': {'memberId': r'$_id'},
+            'pipeline': [
+              {
+                r'$match': {
+                  r'$expr': {
+                    r'$eq': [r'$member_id', r'$$memberId']
+                  }
+                }
+              },
+
+              // 🔥 نحول created_at من String لـ Date
+              {
+                r'$addFields': {
+                  'createdAtDate': {r'$toDate': r'$created_at'}
+                }
+              },
+
+              // 🔥 نرتب صح
+              {
+                r'$sort': {'createdAtDate': -1}
+              },
+
+              // 🔥 ناخد آخر واحدة بس
+              {
+                r'$limit': 1
+              }
+            ],
+            'as': 'membership'
+          }
+        },
+
+        {
+          r'$unwind': {
+            'path': r'$membership',
+            'preserveNullAndEmptyArrays': true
+          }
+        },
+
+        // 3. plan
+        {
+          r'$lookup': {
+            'from': 'plans',
+            'localField': 'membership.plan_id',
+            'foreignField': '_id',
+            'as': 'plan'
+          }
+        },
+
+        {
+          r'$unwind': {
+            'path': r'$plan',
+            'preserveNullAndEmptyArrays': true
+          }
+        },
+
+        // 4. trainer
+        {
+          r'$lookup': {
+            'from': 'trainers',
+            'localField': 'membership.assigned_trainer_id',
+            'foreignField': '_id',
+            'as': 'trainer'
+          }
+        },
+
+        {
+          r'$unwind': {
+            'path': r'$trainer',
+            'preserveNullAndEmptyArrays': true
+          }
+        },
+
+        // 5. الشكل النهائي
+        {
+          r'$project': {
+            '_id': 1,
+
+            'membershipId': r'$membership._id',
+
+            'fullName': r'$full_name',
+            'phone': r'$phone_number',
+            'age': 1,
+            'gender': 1,
+            'status': 1,
+
+            'plan': r'$plan.plan_name',
+            'trainer': r'$trainer.full_name',
+
+            'startDate': r'$membership.start_date',
+            'expiryDate': r'$membership.expiry_date',
+            'paymentStatus': r'$membership.payment_status',
+          }
+        }
+      ];
+
+      final result =
+          await _collection.aggregateToStream(pipeline).toList();
+
+      debugPrint('member ship ${result.first}');
+
+      if (result.isEmpty) return null;
+
+      return result.first;
+    } catch (e) {
+      debugPrint("❌ getMemberDetails error: $e");
+      return null;
+    }
+  }
+
+  Future<void> updatePaymentStatus(String membershipId, String status) async {
+    final objectId = ObjectId.parse(membershipId);
+
+    await _membershipsCollection.updateOne(
+      where.eq('_id', objectId),  
+      modify.set('payment_status', status),
+    );
+  }
+
   Future<void> addMembership({
     required String memberId,
     required String planId,
